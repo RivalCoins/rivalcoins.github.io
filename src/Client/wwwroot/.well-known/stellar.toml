@@ -1,0 +1,46 @@
+ACCOUNTS=[
+"GCEUWRZRXO6TVFIUNDGCWUSYAMKKOQ3JCF4UCR4BSKBIL7JJDM2NQHN7",
+"GDYUDMKYFV42XGFVUVIQTLIHCCOKG3UAG43RY2UMV67QWBQTVCKSFZP6"
+]
+VERSION="2.0.0"
+
+[DOCUMENTATION]
+ORG_NAME="Rival Coins"
+#ORG_DBA="Organization DBA"
+ORG_URL="https://rivalcoins.github.io"
+ORG_LOGO="https://meritcasting.github.io/mstile-150x150.png"
+ORG_DESCRIPTION="Let them fight"
+ORG_PHYSICAL_ADDRESS="Chicago, IL"
+ORG_PHYSICAL_ADDRESS_ATTESTATION="https://www.domain.com/address_attestation.jpg"
+#ORG_PHONE_NUMBER="1 (123)-456-7890"
+#ORG_PHONE_NUMBER_ATTESTATION="https://www.domain.com/phone_attestation.jpg"
+#ORG_KEYBASE="accountname"
+#ORG_TWITTER="orgtweet"
+#ORG_GITHUB="orgcode"
+ORG_OFFICIAL_EMAIL="support@domain.com"
+
+[[PRINCIPALS]]
+name="Jerome Bell"
+email="jane@domain.com"
+#keybase="crypto_jane"
+#twitter="crypto_jane"
+#github="crypto_jane"
+#id_photo_hash="be688838ca8686e5c90689bf2ab585cef1137c999b48c70b92f67a5c34dc15697b5d11c982ed6d71be1e1e7f7b4e0733884aa97c3f7a339a8ed03577cf74be09"
+#verification_photo_hash="016ba8c4cfde65af99cb5fa8b8a37e2eb73f481b3ae34991666df2e04feb6c038666ebd1ec2b6f623967756033c702dde5f423f7d47ab6ed1827ff53783731f7"
+
+[[CURRENCIES]]
+code="USD"
+issuer="GCEUWRZRXO6TVFIUNDGCWUSYAMKKOQ3JCF4UCR4BSKBIL7JJDM2NQHN7"
+display_decimals=2
+name="USD by Rival Coins"
+description="USD stablecoin provided by Rival Coins"
+is_asset_anchored=false
+
+[[CURRENCIES]]
+code="ChiCoin"
+issuer="GDYUDMKYFV42XGFVUVIQTLIHCCOKG3UAG43RY2UMV67QWBQTVCKSFZP6"
+display_decimals=2
+name="ChiCoin"
+description="A currency for expressing Chicago pride"
+image="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Flag_of_Chicago%2C_Illinois.svg/510px-Flag_of_Chicago%2C_Illinois.svg.png"
+is_asset_anchored=false
