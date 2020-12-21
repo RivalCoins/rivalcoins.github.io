@@ -1,6 +1,5 @@
 ACCOUNTS=[
-"GCEUWRZRXO6TVFIUNDGCWUSYAMKKOQ3JCF4UCR4BSKBIL7JJDM2NQHN7",
-"GDYUDMKYFV42XGFVUVIQTLIHCCOKG3UAG43RY2UMV67QWBQTVCKSFZP6"
+"GBPAJJPG4FEEDAI5TTHI4LYJDYKMJSRNG3GWNYC6OFJHVJPZDMOCN527"
 ]
 VERSION="2.0.0"
 
@@ -29,18 +28,9 @@ email="jane@domain.com"
 #verification_photo_hash="016ba8c4cfde65af99cb5fa8b8a37e2eb73f481b3ae34991666df2e04feb6c038666ebd1ec2b6f623967756033c702dde5f423f7d47ab6ed1827ff53783731f7"
 
 [[CURRENCIES]]
-code="USD"
-issuer="GCEUWRZRXO6TVFIUNDGCWUSYAMKKOQ3JCF4UCR4BSKBIL7JJDM2NQHN7"
+code="REFUGECOIN"
+issuer="GBPAJJPG4FEEDAI5TTHI4LYJDYKMJSRNG3GWNYC6OFJHVJPZDMOCN527"
 display_decimals=2
-name="USD by Rival Coins"
-description="USD stablecoin provided by Rival Coins"
-is_asset_anchored=false
-
-[[CURRENCIES]]
-code="ChiCoin"
-issuer="GDYUDMKYFV42XGFVUVIQTLIHCCOKG3UAG43RY2UMV67QWBQTVCKSFZP6"
-display_decimals=2
-name="ChiCoin"
-description="A currency for expressing Chicago pride"
-image="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Flag_of_Chicago%2C_Illinois.svg/510px-Flag_of_Chicago%2C_Illinois.svg.png"
+name="Refuge Coin"
+description="Refuge Coin is a USD vanity coin that expresses one's support of the City of Refuge project and movement (founded by Min. Jerome Bell)"
 is_asset_anchored=false
