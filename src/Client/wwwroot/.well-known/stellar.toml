@@ -33,5 +33,5 @@ code="REFUGECOIN"
 issuer="GBPAJJPG4FEEDAI5TTHI4LYJDYKMJSRNG3GWNYC6OFJHVJPZDMOCN527"
 display_decimals=2
 name="Refuge Coin"
-description="Refuge Coin is a USD vanity coin that expresses one's support of the City of Refuge project and movement (founded by Min. Jerome Bell)"
+desc="Refuge Coin is a USD vanity coin that expresses one's support of the City of Refuge project and movement (founded by Min. Jerome Bell)"
 is_asset_anchored=false
