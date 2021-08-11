@@ -1,0 +1,19 @@
+﻿syntax = "proto3"; 
+// replace namespace with your own
+option csharp_namespace = "RivalCoins.WebWallet.Shared.Grpc"; 
+package WeatherForecast; 
+import "google/protobuf/timestamp.proto"; 
+
+service WeatherForecasts { 
+	rpc GetWeather (WeatherForecast) returns (WeatherReply); 
+} 
+
+message WeatherReply { 
+	repeated WeatherForecast forecasts = 1; 
+} 
+
+message WeatherForecast { 
+	google.protobuf.Timestamp dateTimeStamp = 1; 
+	int32 temperatureC = 2; 
+	string summary = 3; 
+}
