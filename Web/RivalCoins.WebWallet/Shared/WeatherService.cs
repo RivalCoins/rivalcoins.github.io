@@ -19,8 +19,6 @@ namespace RivalCoins.WebWallet.Shared
             var reply = new WeatherReply();
             var rng = new Random();
 
-            WeatherForecast foo;
-
             reply.Forecasts.Add(Enumerable.Range(1, 10).Select(index => new Grpc.WeatherForecast
             {
                 DateTimeStamp = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(index)),

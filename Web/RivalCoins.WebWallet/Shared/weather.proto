@@ -4,6 +4,27 @@ option csharp_namespace = "RivalCoins.WebWallet.Shared.Grpc";
 package WeatherForecast; 
 import "google/protobuf/timestamp.proto"; 
 
+service RivalCoinsService { 
+	rpc CreateAirDropTransaction (AirDropRequest) returns (Transaction);
+	rpc SubmitAirDropTransaction (SignedTransaction) returns (Success);
+} 
+
+message AirDropRequest {
+	string recipientAddress = 1;
+}
+
+message Transaction {
+	string unsignedXdr = 1;
+}
+
+message SignedTransaction {
+	string Xdr = 1;
+}
+
+message Success {
+	bool Success = 1;
+}
+
 service WeatherForecasts { 
 	rpc GetWeather (WeatherForecast) returns (WeatherReply); 
 } 

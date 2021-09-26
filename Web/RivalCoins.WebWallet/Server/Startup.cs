@@ -57,6 +57,7 @@ namespace RivalCoins.WebWallet.Server
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapGrpcService<WeatherService>().EnableGrpcWeb();
+                endpoints.MapGrpcService<RivalCoinsService>().EnableGrpcWeb();
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
                 endpoints.MapFallbackToFile("index.html");

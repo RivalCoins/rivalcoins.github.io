@@ -1,7 +1,207 @@
 ﻿@page "/"
+@using stellar_dotnet_sdk
+@using RivalCoins.WebWallet.Shared
+@using RivalCoins.WebWallet.Shared.Grpc
+@using stellar_dotnet_sdk.responses
+@using Tommy
+@using RivalCoinsService = RivalCoins.WebWallet.Shared.Grpc.RivalCoinsService
+@using System.IO
 
-<h1>Hello, world!</h1>
+@inject IJSRuntime JS;
+@inject RivalCoinsService.RivalCoinsServiceClient RivalCoinsClient
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject IRivalCoinsApp App
+@inject HttpClient Http
 
-Welcome to your new app.
+<br />
+@if (_showPassword)
+{
+    <MudText>Your Password</MudText>
+    <input id="password" type="password" placeholder="Your Password" @bind="@Password" />
+    <br />
+    <br />
+}
+@if (_showLoginButton)
+{
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="OnLogin">Login</MudButton>
+    <br />
+    <br />
+}
+@if (_showCreateWalletButton)
+{
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="OnCreateWallet">Create Account</MudButton>
+    <br />
+    <br />
+}
+@if (_showAirDrop)
+{
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="OnAirDrop">Gimme dat MONEY!</MudButton>
+    <br />
+    <br />
+}
+<MudText>Debug: @Debug</MudText>
+<br />
+<br />
+Stellar Balance: @StellarBalance
+<br />
+<br />
+MONEY Balance: @MoneyBalance
+<br />
+<br />
+<input id="recipientAddress" type="text" placeholder="Your Public Key, which starts with the letter G" pattern="G[A-Z,2-7]{55}" size="56" @bind="RecipientAddress" />
+<br />
+<br />
+<MudText>Rival Coins</MudText>
+<MudList Clickable="true">
+    @foreach (var rivalCoin in _swapOutCoins)
+    {
+        <MudListItem Text="@($"{rivalCoin.Name} ({rivalCoin.Asset.Code()}) - {rivalCoin.Quantity}")" />
+    }
+</MudList>
+<hr />
+<MudText>Swap Rival Coins!</MudText>
+<MudGrid>
+    <MudItem xs="12" sm="6">
+        <MudSelect T="RivalCoin" Label="Swap Out" @bind-Value="@SelectedSwapOut" Variant="Variant.Outlined">
+            @foreach (var rivalCoin in _swapOutCoins)
+            {
+                <MudSelectItem Value="@rivalCoin">
+                    <img width="30" height="30" src="@rivalCoin.IconUri" /> @($"{rivalCoin.Name} ({rivalCoin.Asset.CanonicalName().Split(':')[0]})")
+                </MudSelectItem>
+            }
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="6" sm="6">
+        <MudSelect T="RivalCoin" Label="Swap In" @bind-Value="@SelectedSwapIn" Variant="Variant.Outlined">
+            @foreach (var rivalCoin in _swappableCoins)
+            {
+                <MudSelectItem Value="@rivalCoin">
+                    <img width="30" height="30" src="@rivalCoin.IconUri" /> @($"{rivalCoin.Name} ({rivalCoin.Asset.CanonicalName().Split(':')[0]})")
+                </MudSelectItem>
+            }
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">@SelectedSwapOut?.Description</MudPaper>
+    </MudItem>
+    <MudItem xs="6" sm="6">
+        <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">@SelectedSwapIn?.Description</MudPaper>
+    </MudItem>
+</MudGrid>
+<MudTextField T="double" Label="Amount" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="@_swapAmount"></MudTextField>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="OnSwapCoins">Swap</MudButton>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code
+{
+    private string RecipientAddress { get; set; }
+    private string Debug { get; set; }
+    private string SignedTx { get; set; }
+    private string StellarBalance { get; set; }
+    private string MoneyBalance { get; set; }
+    private bool _showCreateWalletButton;
+    private bool _showLoginButton;
+    private bool _showPassword;
+    private bool _showAirDrop;
+    private StellarManagedNetwork _network = StellarManagedNetwork.Testnet;
+    private readonly List<RivalCoin> _swapOutCoins = new List<RivalCoin>();
+    private List<RivalCoin> _swappableCoins = new List<RivalCoin>();
+    private RivalCoin SelectedSwapOut { get; set; }
+    private RivalCoin SelectedSwapIn { get; set; }
+    private double _swapAmount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _showCreateWalletButton = !await this.LocalStorage.ContainKeyAsync("SecretSeed");
+        _showLoginButton = !_showCreateWalletButton;
+        _showPassword = true;
+
+        _ = Task.Run(async () => _swappableCoins = new List<RivalCoin>(await this.App.GetSwappableCoinsAsync(_network)));
+    }
+
+    private async Task OnLogin()
+    {
+        // ensure password entered
+        if (string.IsNullOrEmpty(this.Password))
+        {
+            this.Debug = "Please enter password!";
+            return;
+        }
+
+        // restore wallet
+        var walletSuccessfullyRestored = await this.App.RestoreWalletAsync(this.Password, _network);
+
+        if(walletSuccessfullyRestored)
+        {
+            // show balances
+            await this.RefreshBalancesAsync();
+
+            _showCreateWalletButton = _showLoginButton = _showPassword = false;
+            _showAirDrop = true;
+
+            this.RecipientAddress = this.App.GetPublicAddress();
+        }
+    }
+
+    private async Task OnSwapCoins()
+    {
+        this.Debug = "Swapping coins...";
+        await this.App.SwapAysnc(this.SelectedSwapOut, this.SelectedSwapIn, _swapAmount);
+        this.Debug = "Coins swapped!";
+
+        this.Debug = "Refreshing balances...";
+        await this.RefreshBalancesAsync();
+        this.Debug = "Balances refreshed!";
+    }
+
+    private async Task RefreshBalancesAsync()
+    {
+        var balances = await this.App.GetBalancesAsync();
+
+        var xlmBalance = balances.First(balance => balance.AssetType == "native");
+        var moneyBalance = balances.FirstOrDefault(balance => balance.Asset.CanonicalName() == Wallet.MoneyTestnet.CanonicalName());
+
+        this.StellarBalance = xlmBalance.BalanceString;
+        this.MoneyBalance = moneyBalance?.BalanceString;
+
+        // update swap out coins
+        _swapOutCoins.Clear();
+        foreach(var balance in balances.Where(b => b != xlmBalance))
+        {
+            var swapOutCoin = _swappableCoins.FirstOrDefault(coin => coin.Asset.CanonicalName() == balance.Asset.CanonicalName());
+            if(swapOutCoin != null)
+            {
+                _swapOutCoins.Add(swapOutCoin with { Quantity = double.Parse(balance.BalanceString) });
+            }
+        }
+    }
+
+    private async Task OnAirDrop()
+    {
+        await this.App.AirDropAsync();
+        await RefreshBalancesAsync();
+    }
+
+    private async Task OnCreateWallet()
+    {
+        // ensure password entered
+        if (string.IsNullOrEmpty(this.Password))
+        {
+            this.Debug = "Please enter password!";
+            return;
+        }
+
+        this.Debug = "Creating account...";
+        await this.App.CreateWalletAsync(this.Password, _network);
+        this.Debug = "Account created!";
+
+        // show current balances
+        this.Debug = "Refreshing balances...";
+        await this.RefreshBalancesAsync();
+        this.Debug = "Balances refreshed!";
+
+        _showCreateWalletButton = _showLoginButton = _showPassword = false;
+        _showAirDrop = true;
+    }
+
+    public string? Password { get; set; }
+}
