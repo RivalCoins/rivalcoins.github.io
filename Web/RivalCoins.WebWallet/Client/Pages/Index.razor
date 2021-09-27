@@ -165,7 +165,7 @@ MONEY Balance: @MoneyBalance
 
         // update swap out coins
         _swapOutCoins.Clear();
-        foreach(var balance in balances.Where(b => b != xlmBalance))
+        foreach(var balance in balances.Where(b => b != xlmBalance && double.Parse(b.BalanceString) != 0.0))
         {
             var swapOutCoin = _swappableCoins.FirstOrDefault(coin => coin.Asset.CanonicalName() == balance.Asset.CanonicalName());
             if(swapOutCoin != null)

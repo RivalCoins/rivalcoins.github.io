@@ -12,38 +12,71 @@ namespace RivalCoins.WebWallet.Client
     {
         private readonly RivalCoin[] _swappableCoins;
         private readonly Dictionary<Asset, double> _balances = new Dictionary<Asset, double>();
-        private readonly RivalCoin _money;
-        private readonly Asset _xlm = new AssetTypeNative();
         
         public MockRivalCoinsApp()
         {
             const string IssuingAccount = "GAXJYZ6GFEGMMD6TO72HGCN5LPMPKJH6SYELXUBVZQ3NADXJBXVR2Q6G";
 
-            _money = new RivalCoin(
-                "MONEY",
-                Asset.CreateNonNativeAsset("MONEY", IssuingAccount),
-                "This is mock MONEY",
-                0.0,
-                "https://rivalcoins.io/wp-content/uploads/2021/06/logo-500x500-1.png");
-
             _swappableCoins = new[]
             {
-                _money,
                 new RivalCoin(
-                    "Asset A", 
-                    Asset.CreateNonNativeAsset("AssetA", IssuingAccount),
-                    "[Rival Coin] Asset A",
+                    "MONEY",
+                    Asset.CreateNonNativeAsset("MONEY", IssuingAccount),
+                    "This is mock MONEY",
                     0.0,
                     "https://rivalcoins.io/wp-content/uploads/2021/06/logo-500x500-1.png"),
                 new RivalCoin(
-                    "Asset B",
-                    Asset.CreateNonNativeAsset("AssetB", IssuingAccount),
-                    "[Rival Coin] Asset B",
+                    "Scott Schluter", 
+                    Asset.CreateNonNativeAsset("SSchluter", IssuingAccount),
+                    "[Rival Coin] Scott Schluter",
                     0.0,
-                    "https://rivalcoins.io/wp-content/uploads/2021/06/logo-500x500-1.png")
+                    "https://rivalcoins.io/wp-content/uploads/2021/06/scott-schluter.jpg"),
+                new RivalCoin(
+                    "JB Pritzker",
+                    Asset.CreateNonNativeAsset("JBPritzker", IssuingAccount),
+                    "[Rival Coin] JB Pritzker",
+                    0.0,
+                    "https://rivalcoins.io/wp-content/uploads/2021/09/jbpritzker.jpg"),
+                new RivalCoin(
+                    "Darren Bailey",
+                    Asset.CreateNonNativeAsset("DBailey", IssuingAccount),
+                    "[Rival Coin] Darren Bailey",
+                    0.0,
+                    "https://rivalcoins.io/wp-content/uploads/2021/09/DarrenBailey.jpg"),
+                new RivalCoin(
+                    "Cheryl Erickson",
+                    Asset.CreateNonNativeAsset("CErickson", IssuingAccount),
+                    "[Rival Coin] Cheryl Erickson",
+                    0.0,
+                    "https://rivalcoins.io/wp-content/uploads/2021/09/CherylErickson.jpg"),
+                new RivalCoin(
+                    "Gary Rabine",
+                    Asset.CreateNonNativeAsset("GRabine", IssuingAccount),
+                    "[Rival Coin] Gary Rabine",
+                    0.0,
+                    "https://rivalcoins.io/wp-content/uploads/2021/09/GaryRabine.jpg"),
+                new RivalCoin(
+                    "Christopher J. Roper",
+                    Asset.CreateNonNativeAsset("CJRoper", IssuingAccount),
+                    "[Rival Coin] Christohper J. Roper",
+                    0.0,
+                    "https://rivalcoins.io/wp-content/uploads/2021/09/ChristopherRoper.jpg"),
+                new RivalCoin(
+                    "Paul Schimpf",
+                    Asset.CreateNonNativeAsset("PSchimpf", IssuingAccount),
+                    "[Rival Coin] Paul Schimpf",
+                    0.0,
+                    "https://rivalcoins.io/wp-content/uploads/2021/09/PaulSchimpf.jpg"),
+                new RivalCoin(
+                    "Jesse Sullivan",
+                    Asset.CreateNonNativeAsset("JSullivan", IssuingAccount),
+                    "[Rival Coin] Jesse Sullivan",
+                    0.0,
+                    "https://rivalcoins.io/wp-content/uploads/2021/09/JesseSullivan.jpg")
             };
 
-            _balances.Add(_xlm, 0.0);
+            // Add XLM balance
+            _balances.Add(new AssetTypeNative(), 0.0);
 
             foreach (var swappableCoin in _swappableCoins)
             {
@@ -98,7 +131,6 @@ namespace RivalCoins.WebWallet.Client
 
         private static Balance GetBalance(Asset asset, double balance)
         {
-            var foo = asset.CanonicalName();
             return new Balance(
                 asset is AssetTypeNative ? "native" : "alphanum12",
                 asset is AssetTypeNative ? string.Empty : asset.Code(),
