@@ -13,7 +13,7 @@ namespace RivalCoins.WebWallet.Server
 {
     public class RivalCoinsService : Shared.Grpc.RivalCoinsService.RivalCoinsServiceBase
     {
-        private const string AirDropAccountSeed = "<CHANGEME>";
+        private const string AirDropAccountSeed = "<CHANGE ME>";
 
         private readonly Wallet _airDropWallet;
 
@@ -45,14 +45,14 @@ namespace RivalCoins.WebWallet.Server
 
         public override async Task<Transaction> CreateAirDropTransaction(AirDropRequest request, ServerCallContext context)
         {
-            const string AirDropAmount = "100.0";
+            const string AirDropAmount = "1000.0";
 
             // user will pay the air drop transaction fee
 
             //TODO validate transaction ability to execute transaction
 
             var airDropTransaction = await Shared.Transaction.CreateAsync(KeyPair.FromAccountId(request.RecipientAddress), _airDropWallet.Server.Value);
-            var moneyAsset = _airDropWallet.StellarManagedNetwork == StellarManagedNetwork.Testnet ? Wallet.MoneyTestnet : Wallet.MoneyMainnet;
+            var dollar = Wallet.USDC[_airDropWallet.StellarManagedNetwork];
 
             // create trustline
             //      Remember, the TRANSACTION source account is the user's account, thus any
@@ -65,14 +65,14 @@ namespace RivalCoins.WebWallet.Server
             //      setting it to the Air Drop account, since that's redundant with
             //      the payment operation and will thus have no real effect.
             airDropTransaction.AddOperation(
-                new ChangeTrustOperation.Builder(moneyAsset).Build(),
+                new ChangeTrustOperation.Builder(dollar).Build(),
                 _airDropWallet.Account.KeyPairWithSeed);
 
             // send air drop
             airDropTransaction.AddOperation(
                 new PaymentOperation.Builder(
                     KeyPair.FromAccountId(request.RecipientAddress),
-                    moneyAsset,
+                    dollar,
                     AirDropAmount)
                     .SetSourceAccount(_airDropWallet.Account.Account.KeyPair)
                     .Build(),

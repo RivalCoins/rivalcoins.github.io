@@ -56,9 +56,10 @@
             return transaction.toXDR();
         }
 
-        window.swap = async (swapOutCode, swapOutIssuer, swapInCode, swapInIssuer, amount, networkPassphrase, accountSecret) => {
+        window.swap = async (swapOutCode, swapOutIssuer, swapInCode, swapInIssuer, amount, pathAssetCode, pathAssetIssuer, networkPassphrase, accountSecret) => {
             const swapOut = new StellarSdk.Asset(swapOutCode, swapOutIssuer);
             const swapIn = new StellarSdk.Asset(swapInCode, swapInIssuer);
+            const pathAsset = new StellarSdk.Asset(pathAssetCode, pathAssetIssuer);
             const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
             const accountKeyPair = StellarSdk.Keypair.fromSecret(accountSecret);
             const account = await server.loadAccount(accountKeyPair.publicKey());
@@ -67,16 +68,17 @@
             const transaction = new StellarSdk.TransactionBuilder(account, { fee, networkPassphrase: networkPassphrase })
                 .addOperation(
                     StellarSdk.Operation.changeTrust({
-                        asset: swapIn,
+                        asset: swapIn
                     })
                 )
                 .addOperation(
                     StellarSdk.Operation.pathPaymentStrictReceive({
                         sendAsset: swapOut,
-                        sendMax: "1000",
+                        sendMax: "100000",
                         destination: accountKeyPair.publicKey(),
                         destAsset: swapIn,
-                        destAmount: amount
+                        destAmount: amount,
+                        path: [ pathAsset ]
                     })
                 )
                 .setTimeout(30)
@@ -86,6 +88,7 @@
             transaction.sign(accountKeyPair);
 
             try {
+                console.log(transaction.toXDR());
                 const transactionResult = await server.submitTransaction(transaction);
                 console.log(transactionResult);
             } catch (err) {
@@ -159,7 +162,10 @@
             return ivHex + ctBase64;                                                             // return iv+ciphertext
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/8.2.5/stellar-sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/9.1.0/stellar-sdk.js"></script>
+    <script>
+        console.log(StellarSdk);
+    </script>
 </body>
 
 </html>

@@ -42,50 +42,55 @@
 <MudText>Debug: @Debug</MudText>
 <br />
 <br />
-Stellar Balance: @StellarBalance
+<MudText>Address: @RecipientAddress</MudText>
 <br />
 <br />
-MONEY Balance: @MoneyBalance
+<MudText>Stellar Balance: @StellarBalance</MudText>
 <br />
 <br />
-<input id="recipientAddress" type="text" placeholder="Your Public Key, which starts with the letter G" pattern="G[A-Z,2-7]{55}" size="56" @bind="RecipientAddress" />
+<MudText>USDC Balance: @UsdcBalance</MudText>
+<br />
+<br />
+<MudText>DOLLAR Balance: @DollarBalance</MudText>
 <br />
 <br />
 <MudText>Rival Coins</MudText>
 <MudList Clickable="true">
     @foreach (var rivalCoin in _swapOutCoins)
     {
-        <MudListItem Text="@($"{rivalCoin.Name} ({rivalCoin.Asset.Code()}) - {rivalCoin.Quantity}")" />
+        <MudListItem>
+            <img width="30" height="30" src="@rivalCoin.IconUri"/> @($"{rivalCoin.Name} - {rivalCoin.Quantity}")
+        </MudListItem>
     }
 </MudList>
 <hr />
 <MudText>Swap Rival Coins!</MudText>
 <MudGrid>
     <MudItem xs="12" sm="6">
-        <MudSelect T="RivalCoin" Label="Swap Out" @bind-Value="@SelectedSwapOut" Variant="Variant.Outlined">
-            @foreach (var rivalCoin in _swapOutCoins)
-            {
-                <MudSelectItem Value="@rivalCoin">
-                    <img width="30" height="30" src="@rivalCoin.IconUri" /> @($"{rivalCoin.Name} ({rivalCoin.Asset.CanonicalName().Split(':')[0]})")
-                </MudSelectItem>
-            }
-        </MudSelect>
-    </MudItem>
-    <MudItem xs="6" sm="6">
-        <MudSelect T="RivalCoin" Label="Swap In" @bind-Value="@SelectedSwapIn" Variant="Variant.Outlined">
-            @foreach (var rivalCoin in _swappableCoins)
-            {
-                <MudSelectItem Value="@rivalCoin">
-                    <img width="30" height="30" src="@rivalCoin.IconUri" /> @($"{rivalCoin.Name} ({rivalCoin.Asset.CanonicalName().Split(':')[0]})")
-                </MudSelectItem>
-            }
-        </MudSelect>
+        <MudContainer>
+            <MudSelect T="RivalCoin" Label="Swap Out" @bind-Value="@SelectedSwapOut" Variant="Variant.Outlined">
+                @foreach (var rivalCoin in _swapOutCoins)
+                {
+                    <MudSelectItem Value="@rivalCoin">
+                        <img width="30" height="30" src="@rivalCoin.IconUri"/> @($"{rivalCoin.Name}")
+                    </MudSelectItem>
+                }
+            </MudSelect>
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">@SelectedSwapOut?.Description</MudPaper>
+        </MudContainer>
     </MudItem>
     <MudItem xs="12" sm="6">
-        <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">@SelectedSwapOut?.Description</MudPaper>
-    </MudItem>
-    <MudItem xs="6" sm="6">
-        <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">@SelectedSwapIn?.Description</MudPaper>
+        <MudContainer>
+            <MudSelect T="RivalCoin" Label="Swap In" @bind-Value="@SelectedSwapIn" Variant="Variant.Outlined">
+                @foreach (var rivalCoin in _swapInCoins)
+                {
+                    <MudSelectItem Value="@rivalCoin">
+                        <img width="30" height="30" src="@rivalCoin.IconUri"/> @($"{rivalCoin.Name}")
+                    </MudSelectItem>
+                }
+            </MudSelect>
+            <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">@SelectedSwapIn?.Description</MudPaper>
+        </MudContainer>
     </MudItem>
 </MudGrid>
 <MudTextField T="double" Label="Amount" Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="@_swapAmount"></MudTextField>
@@ -98,12 +103,15 @@ MONEY Balance: @MoneyBalance
     private string SignedTx { get; set; }
     private string StellarBalance { get; set; }
     private string MoneyBalance { get; set; }
+    private string UsdcBalance { get; set; }
+    private string DollarBalance { get; set; }
     private bool _showCreateWalletButton;
     private bool _showLoginButton;
     private bool _showPassword;
     private bool _showAirDrop;
     private StellarManagedNetwork _network = StellarManagedNetwork.Testnet;
     private readonly List<RivalCoin> _swapOutCoins = new List<RivalCoin>();
+    private readonly List<RivalCoin> _swapInCoins = new List<RivalCoin>();
     private List<RivalCoin> _swappableCoins = new List<RivalCoin>();
     private RivalCoin SelectedSwapOut { get; set; }
     private RivalCoin SelectedSwapIn { get; set; }
@@ -115,7 +123,14 @@ MONEY Balance: @MoneyBalance
         _showLoginButton = !_showCreateWalletButton;
         _showPassword = true;
 
-        _ = Task.Run(async () => _swappableCoins = new List<RivalCoin>(await this.App.GetSwappableCoinsAsync(_network)));
+        _ = this.LoadSwappableCoinsAsync();
+    }
+
+    private async Task LoadSwappableCoinsAsync()
+    {
+        _swappableCoins = new List<RivalCoin>(await this.App.GetSwappableCoinsAsync(_network));
+
+        _swapInCoins.AddRange(_swappableCoins.Where(asset => asset.Asset.Code() != "USDC"));
     }
 
     private async Task OnLogin()
@@ -130,7 +145,7 @@ MONEY Balance: @MoneyBalance
         // restore wallet
         var walletSuccessfullyRestored = await this.App.RestoreWalletAsync(this.Password, _network);
 
-        if(walletSuccessfullyRestored)
+        if (walletSuccessfullyRestored)
         {
             // show balances
             await this.RefreshBalancesAsync();
@@ -159,16 +174,20 @@ MONEY Balance: @MoneyBalance
 
         var xlmBalance = balances.First(balance => balance.AssetType == "native");
         var moneyBalance = balances.FirstOrDefault(balance => balance.Asset.CanonicalName() == Wallet.MoneyTestnet.CanonicalName());
+        var dollarBalance = balances.FirstOrDefault(balance => balance.Asset.CanonicalName() == Wallet.DOLLAR[_network].CanonicalName());
+        var usdcBalance = balances.FirstOrDefault(balance => balance.Asset.CanonicalName() == Wallet.USDC[_network].CanonicalName());
 
         this.StellarBalance = xlmBalance.BalanceString;
         this.MoneyBalance = moneyBalance?.BalanceString;
+        this.DollarBalance = dollarBalance?.BalanceString;
+        this.UsdcBalance = usdcBalance?.BalanceString;
 
         // update swap out coins
         _swapOutCoins.Clear();
-        foreach(var balance in balances.Where(b => b != xlmBalance && double.Parse(b.BalanceString) != 0.0))
+        foreach (var balance in balances.Where(b => b != xlmBalance && double.Parse(b.BalanceString) != 0.0))
         {
             var swapOutCoin = _swappableCoins.FirstOrDefault(coin => coin.Asset.CanonicalName() == balance.Asset.CanonicalName());
-            if(swapOutCoin != null)
+            if (swapOutCoin != null)
             {
                 _swapOutCoins.Add(swapOutCoin with { Quantity = double.Parse(balance.BalanceString) });
             }

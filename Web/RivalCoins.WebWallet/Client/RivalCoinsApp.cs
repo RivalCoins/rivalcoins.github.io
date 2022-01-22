@@ -63,7 +63,7 @@ namespace RivalCoins.WebWallet.Client
 
         public async Task<IEnumerable<RivalCoin>> GetSwappableCoinsAsync(StellarManagedNetwork network)
         {
-            await using var rivalCoinsToml = await _http.GetStreamAsync($"https://{(network == StellarManagedNetwork.Testnet ? "test." : string.Empty)}rivalcoins.io/.well-known/stellar{(network == StellarManagedNetwork.Testnet ? "-test" : string.Empty)}.toml");
+            await using var rivalCoinsToml = await _http.GetStreamAsync($"https://{(network == StellarManagedNetwork.Testnet ? "dev." : string.Empty)}rivalcoins.io/.well-known/stellar.toml");
             using var rivalCoinsTomlStream = new StreamReader(rivalCoinsToml);
             var swappableCoins = new List<RivalCoin>();
 
@@ -78,6 +78,8 @@ namespace RivalCoins.WebWallet.Client
                     tomlNode["image"]);
 
                 swappableCoins.Add(rivalCoin);
+
+                Console.WriteLine(rivalCoin);
             }
 
             return swappableCoins;
@@ -127,6 +129,14 @@ namespace RivalCoins.WebWallet.Client
 
         public async Task<bool> SwapAysnc(RivalCoin swapOut, RivalCoin swapIn, double quantity)
         {
+            var paths = await Wallet.Testnet.Server.Value.PathStrictReceive
+                .SourceAssets(new [] { swapOut.Asset })
+                .DestinationAsset(swapIn.Asset)
+                .DestinationAmount(quantity.ToString())
+                .Execute();
+
+            var pathAsset = paths.Records.First().Path.FirstOrDefault() ?? swapIn.Asset;
+
             await _js.InvokeVoidAsync(
                 "swap",
                 swapOut.Asset.Code(),
@@ -134,6 +144,8 @@ namespace RivalCoins.WebWallet.Client
                 swapIn.Asset.Code(),
                 swapIn.Asset.Issuer(),
                 quantity.ToString(),
+                pathAsset.Code(),
+                pathAsset.Issuer(),
                 _wallet.Wallet.NetworkInfo.NetworkPassphrase,
                 _wallet.Account.PrivateKey);
 

@@ -45,7 +45,7 @@ namespace RivalCoins.WebWallet.Client
 
             builder.Services.AddBlazoredLocalStorage();
 
-            builder.Services.AddScoped<IRivalCoinsApp, MockRivalCoinsApp>();
+            builder.Services.AddScoped<IRivalCoinsApp, RivalCoinsApp>();
 
             builder.Services.AddMudServices();
 
