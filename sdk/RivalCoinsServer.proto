@@ -1,0 +1,25 @@
+﻿syntax = "proto3"; 
+// replace namespace with your own
+option csharp_namespace = "RivalCoins.Sdk.Grpc"; 
+package RivalCoinsSdk; 
+
+service RivalCoinsService { 
+	rpc CreateAirDropTransaction (AirDropRequest) returns (Transaction);
+	rpc SubmitAirDropTransaction (SignedTransaction) returns (Success);
+} 
+
+message AirDropRequest {
+	string recipientAddress = 1;
+}
+
+message Transaction {
+	string unsignedXdr = 1;
+}
+
+message SignedTransaction {
+	string Xdr = 1;
+}
+
+message Success {
+	bool Success = 1;
+}
