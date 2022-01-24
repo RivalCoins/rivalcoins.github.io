@@ -1,6 +1,6 @@
 {
   "name": "Rival Coins Wallet",
-  "short_name": "RivalCoinsWallet",
+  "short_name": "Rival Coins",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
