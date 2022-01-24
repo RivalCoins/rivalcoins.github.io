@@ -21,7 +21,7 @@ namespace RivalCoins.Wallet.Web.Client
             builder.Services.AddSingleton(services =>
             {
                 var httpClient = new HttpClient(new GrpcWebHandler(GrpcWebMode.GrpcWeb, new HttpClientHandler()));
-                var channel = GrpcChannel.ForAddress("https://localhost:7123", new GrpcChannelOptions { HttpClient = httpClient });
+                var channel = GrpcChannel.ForAddress("https://wallet.rivalcoins.io", new GrpcChannelOptions { HttpClient = httpClient });
                 return new RivalCoinsService.RivalCoinsServiceClient(channel);
             });
 
