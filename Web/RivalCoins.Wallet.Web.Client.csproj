@@ -30,6 +30,9 @@
     <Content Update="wwwroot\favicon.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Update="wwwroot\icon-1500.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Update="wwwroot\icon-512.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

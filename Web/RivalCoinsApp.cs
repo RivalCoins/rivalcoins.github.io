@@ -62,7 +62,7 @@ public class RivalCoinsApp : IRivalCoinsApp
 
     public async Task<IEnumerable<RivalCoin>> GetSwappableCoinsAsync(StellarManagedNetwork network)
     {
-        await using var rivalCoinsToml = await _http.GetStreamAsync($"https://{(network == StellarManagedNetwork.Testnet ? "dev." : string.Empty)}rivalcoins.io/.well-known/stellar.toml");
+        await using var rivalCoinsToml = await _http.GetStreamAsync($"https://{(network == StellarManagedNetwork.Testnet ? "demo." : string.Empty)}rivalcoins.io/.well-known/stellar.toml");
         using var rivalCoinsTomlStream = new StreamReader(rivalCoinsToml);
         var swappableCoins = new List<RivalCoin>();
 
