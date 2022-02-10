@@ -4,12 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using stellar_dotnet_sdk;
+using stellar_dotnet_sdk.responses;
 
 namespace RivalCoins.Sdk
 {
     public class Transaction
     {
         private string _sourceAccountSeed;
+        private AccountResponse _account;
 
         private Transaction()
         {
@@ -20,7 +22,8 @@ namespace RivalCoins.Sdk
             var transaction = new Transaction();
 
             transaction._sourceAccountSeed = transactionSourceAccount.CanSign() ? transactionSourceAccount.SecretSeed : null;
-            transaction.Builder = new TransactionBuilder(await Wallet.GetAccountAsync(transactionSourceAccount, server));
+            transaction._account = await server.Accounts.Account(transactionSourceAccount.AccountId);
+            transaction.Builder = new TransactionBuilder(transaction._account);
 
             return transaction;
         }
@@ -45,7 +48,7 @@ namespace RivalCoins.Sdk
             return transaction.ToUnsignedEnvelopeXdrBase64();
         }
 
-        public async Task<bool> SubmitAsync(Server server, Network network, string logDescription)
+        public async Task<bool> SubmitAsync(Server server, stellar_dotnet_sdk.Network network, string logDescription)
         {
             try
             {
@@ -72,9 +75,13 @@ namespace RivalCoins.Sdk
             {
                 Console.WriteLine($"{logDescription} Exception: {exception.Message + Environment.NewLine + exception.StackTrace}");
             }
+            finally
+            {
+                SourceAccounts.Clear();
+                SourceAccounts.Add(KeyPair.FromSecretSeed(_sourceAccountSeed));
 
-            SourceAccounts.Clear();
-            SourceAccounts.Add(KeyPair.FromSecretSeed(_sourceAccountSeed));
+                this.Builder = new TransactionBuilder(_account);
+            }
 
             return false;
         }

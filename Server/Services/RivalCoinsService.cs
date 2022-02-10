@@ -7,27 +7,25 @@ namespace RivalCoins.Server.Services;
 
 public class RivalCoinsService : Sdk.Grpc.RivalCoinsService.RivalCoinsServiceBase
 {
-    private const string AirDropAccountSeed = "<CHANGE ME>";
-
     private readonly Wallet _airDropWallet;
 
-    public RivalCoinsService()
+    public RivalCoinsService(Wallet airDropWallet)
     {
-        _airDropWallet = Wallet.Testnet with { AccountSecretSeed = AirDropAccountSeed };
+        _airDropWallet = airDropWallet;
     }
 
     public override async Task<Success> SubmitAirDropTransaction(SignedTransaction request, ServerCallContext context)
     {
         var tx = stellar_dotnet_sdk.Transaction.FromEnvelopeXdr(request.Xdr);
 
-        tx.Sign(_airDropWallet.Account.KeyPairWithSeed, _airDropWallet.NetworkInfo);
+        tx.Sign(_airDropWallet.KeyPairWithSecretSeed, _airDropWallet.NetworkInfo);
 
         var xdr = tx.ToEnvelopeXdrBase64();
         Console.WriteLine(xdr);
         Console.WriteLine();
         Console.WriteLine();
 
-        var response = await _airDropWallet.Server.Value.SubmitTransaction(tx);
+        var response = await _airDropWallet.Server.SubmitTransaction(tx);
 
         if (!response.IsSuccess())
         {
@@ -45,8 +43,8 @@ public class RivalCoinsService : Sdk.Grpc.RivalCoinsService.RivalCoinsServiceBas
 
         //TODO validate transaction ability to execute transaction
 
-        var airDropTransaction = await Sdk.Transaction.CreateAsync(KeyPair.FromAccountId(request.RecipientAddress), _airDropWallet.Server.Value);
-        var dollar = Wallet.USDC[_airDropWallet.StellarManagedNetwork];
+        var airDropTransaction = await Sdk.Transaction.CreateAsync(KeyPair.FromAccountId(request.RecipientAddress), _airDropWallet.Server);
+        var usdc = Wallet.USDC[_airDropWallet.Network];
 
         // create trustline
         //      Remember, the TRANSACTION source account is the user's account, thus any
@@ -59,18 +57,18 @@ public class RivalCoinsService : Sdk.Grpc.RivalCoinsService.RivalCoinsServiceBas
         //      setting it to the Air Drop account, since that's redundant with
         //      the payment operation and will thus have no real effect.
         airDropTransaction.AddOperation(
-            new ChangeTrustOperation.Builder(dollar).Build(),
-            _airDropWallet.Account.KeyPairWithSeed);
+            new ChangeTrustOperation.Builder(ChangeTrustAsset.Create(usdc)).Build(),
+            _airDropWallet.KeyPairWithSecretSeed);
 
         // send air drop
         airDropTransaction.AddOperation(
             new PaymentOperation.Builder(
                 KeyPair.FromAccountId(request.RecipientAddress),
-                dollar,
+                usdc,
                 AirDropAmount)
-                .SetSourceAccount(_airDropWallet.Account.Account.KeyPair)
+                .SetSourceAccount(_airDropWallet.KeyPairWithSecretSeed)
                 .Build(),
-            _airDropWallet.Account.KeyPairWithSeed);
+            _airDropWallet.KeyPairWithSecretSeed);
 
 
         return new Sdk.Grpc.Transaction() { UnsignedXdr = airDropTransaction.GetXdr() };

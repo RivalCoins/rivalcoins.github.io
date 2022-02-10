@@ -4,7 +4,6 @@
 @using RivalCoins.Sdk.Grpc
 @using stellar_dotnet_sdk
 @using stellar_dotnet_sdk.responses
-@using Tommy
 @using System.IO
 
 @inject IJSRuntime JS;
@@ -109,7 +108,6 @@
     private bool _showLoginButton;
     private bool _showPassword;
     private bool _showAirDrop;
-    private StellarManagedNetwork _network = StellarManagedNetwork.Testnet;
     private readonly List<RivalCoin> _swapOutCoins = new List<RivalCoin>();
     private readonly List<RivalCoin> _swapInCoins = new List<RivalCoin>();
     private List<RivalCoin> _swappableCoins = new List<RivalCoin>();
@@ -128,7 +126,7 @@
 
     private async Task LoadSwappableCoinsAsync()
     {
-        _swappableCoins = new List<RivalCoin>(await this.App.GetSwappableCoinsAsync(_network));
+        _swappableCoins = new List<RivalCoin>(await this.App.GetSwappableCoinsAsync());
 
         _swapInCoins.AddRange(_swappableCoins.Where(asset => asset.Asset.Code() != "USDC"));
     }
@@ -143,7 +141,7 @@
         }
 
         // restore wallet
-        var walletSuccessfullyRestored = await this.App.RestoreWalletAsync(this.Password, _network);
+        var walletSuccessfullyRestored = await this.App.RestoreWalletAsync(this.Password);
 
         if (walletSuccessfullyRestored)
         {
@@ -173,8 +171,8 @@
         var balances = await this.App.GetBalancesAsync();
 
         var xlmBalance = balances.First(balance => balance.AssetType == "native");
-        var dollarBalance = balances.FirstOrDefault(balance => balance.Asset.CanonicalName() == Wallet.DOLLAR[_network].CanonicalName());
-        var usdcBalance = balances.FirstOrDefault(balance => balance.Asset.CanonicalName() == Wallet.USDC[_network].CanonicalName());
+        var dollarBalance = balances.FirstOrDefault(balance => balance.Asset.CanonicalName() == Wallet.DOLLAR[this.App.Network].CanonicalName());
+        var usdcBalance = balances.FirstOrDefault(balance => balance.Asset.CanonicalName() == Wallet.USDC[this.App.Network].CanonicalName());
 
         this.StellarBalance = xlmBalance.BalanceString;
         this.DollarBalance = dollarBalance?.BalanceString;
@@ -208,7 +206,7 @@
         }
 
         this.Debug = "Creating account...";
-        await this.App.CreateWalletAsync(this.Password, _network);
+        await this.App.CreateWalletAsync(this.Password);
         this.Debug = "Account created!";
 
         // show current balances

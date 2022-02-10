@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Tommy;
+using Microsoft.Extensions.Configuration;
 
 namespace RivalCoins.Wallet.Web.Client;
 
@@ -25,7 +25,7 @@ public class RivalCoinsApp : IRivalCoinsApp
     private readonly ILocalStorageService _localStorage;
     private readonly IJSRuntime _js;
     private readonly RivalCoinsService.RivalCoinsServiceClient _serverClient;
-    private readonly HttpClient _http;
+    private readonly Sdk.Network _network;
 
     private (Sdk.Wallet Wallet, KeyPairBasic Account) _wallet;
 
@@ -33,65 +33,80 @@ public class RivalCoinsApp : IRivalCoinsApp
         ILocalStorageService localStorage,
         IJSRuntime javaScriptRuntime,
         RivalCoinsService.RivalCoinsServiceClient serverClient,
-        HttpClient http)
+        IConfiguration config)
     {
         _localStorage = localStorage;
         _js = javaScriptRuntime;
         _serverClient = serverClient;
-        _http = http;
+
+        _network = (Sdk.Network)Enum.Parse(typeof(Sdk.Network), config.GetValue<string>("network"));
     }
 
-    public async Task CreateWalletAsync(string password, StellarManagedNetwork network)
-    {
-        // We don't use .NET API because System.Security.Cryptography.Csp is not supported on this platform.
+    public Sdk.Network Network => _network;
 
-        // generate key pair
-        _wallet = RestoreWallet(await _js.InvokeAsync<string>("createKeyPair"), network);
+    #region Disposal
+
+    public void Dispose()
+    {
+        // Dispose of unmanaged resources.
+        Dispose(true);
+
+        // Suppress finalization.
+        GC.SuppressFinalize(this);
+    }
+
+    private bool _disposed = false;
+    protected void Dispose(bool explicitDisposal)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        // disposed managed objects
+        if (explicitDisposal)
+        {
+            if (_wallet.Wallet != null)
+            {
+                _wallet.Wallet.Dispose();
+            }
+        }
+
+        _disposed = true;
+    }
+
+    #endregion Disposal
+
+    public async Task CreateWalletAsync(string password)
+    {
+        _wallet = await RestoreWalletInternalAsync(await _js.InvokeAsync<string>("createKeyPair"), _network);
 
         // store encrypted secret seed in local storage
         var encryptedSecretSeed = await _js.InvokeAsync<string>("aesGcmEncrypt", _wallet.Account.PrivateKey, password);
         await _localStorage.SetItemAsStringAsync("SecretSeed", encryptedSecretSeed);
 
-        // fund account
-        if (network == StellarManagedNetwork.Testnet)
+        // create account
+        if (_network == Sdk.Network.Testnet || _network == Sdk.Network.Demo || _network == Sdk.Network.Local)
         {
-            using var httpClient = new HttpClient();
-            var response = await httpClient.GetAsync($"https://friendbot.stellar.org?addr={_wallet.Account.PublicKey}");
+            await Sdk.Wallet.CreateAccountAsync(_wallet.Account.PublicKey, _network);
         }
     }
 
-    public async Task<IEnumerable<RivalCoin>> GetSwappableCoinsAsync(StellarManagedNetwork network)
+    public async Task<IEnumerable<RivalCoin>> GetSwappableCoinsAsync()
     {
-        await using var rivalCoinsToml = await _http.GetStreamAsync($"https://{(network == StellarManagedNetwork.Testnet ? "demo." : string.Empty)}rivalcoins.io/.well-known/stellar.toml");
-        using var rivalCoinsTomlStream = new StreamReader(rivalCoinsToml);
-        var swappableCoins = new List<RivalCoin>();
-
-        var table = TOML.Parse(rivalCoinsTomlStream);
-        foreach (TomlNode tomlNode in table["CURRENCIES"])
-        {
-            var rivalCoin = new RivalCoin(
-                tomlNode["name"].AsString.Value,
-                Asset.CreateNonNativeAsset(tomlNode["code"], tomlNode["issuer"]),
-                tomlNode["desc"],
-                0.0,
-                tomlNode["image"]);
-
-            swappableCoins.Add(rivalCoin);
-
-            Console.WriteLine(rivalCoin);
-        }
-
-        return swappableCoins;
+        var rivalCoins = await Sdk.Wallet.GetRivalCoinsAsync(_network);
+        
+        return rivalCoins.Select(rivalCoin => new RivalCoin(rivalCoin.Name, rivalCoin.Asset, rivalCoin.Description, 0.0, rivalCoin.ImageUri)).ToList();
     }
 
-    public async Task<bool> RestoreWalletAsync(string password, StellarManagedNetwork network)
+    public async Task<bool> RestoreWalletAsync(string password)
     {
         if (await _localStorage.ContainKeyAsync("SecretSeed"))
         {
             var encryptedSecretSeed = await _localStorage.GetItemAsStringAsync("SecretSeed");
             var decryptedSecretSeed = await _js.InvokeAsync<string>("aesGcmDecrypt", encryptedSecretSeed, password);
 
-            _wallet = RestoreWallet(await _js.InvokeAsync<string>("createKeyPairFromSeed", decryptedSecretSeed), network);
+            _wallet = await RestoreWalletInternalAsync(await _js.InvokeAsync<string>("createKeyPairFromSeed", decryptedSecretSeed), _network);
 
             return true;
         }
@@ -99,7 +114,7 @@ public class RivalCoinsApp : IRivalCoinsApp
         return false;
     }
 
-    public async Task<bool> LoginUserAsync(string password, StellarManagedNetwork network)
+    public async Task<bool> LoginUserAsync(string password)
     {
         // log in user if they are not already logged in and a wallet can be restored
         if (await _localStorage.ContainKeyAsync("SecretSeed"))
@@ -107,7 +122,7 @@ public class RivalCoinsApp : IRivalCoinsApp
             var secretSeed = await _localStorage.GetItemAsStringAsync("SecretSeed");
             var decryptedSecretSeed = await _js.InvokeAsync<string>("aesGcmDecrypt", secretSeed, password);
 
-            _wallet = RestoreWallet(await _js.InvokeAsync<string>("createKeyPairFromSeed", decryptedSecretSeed), network);
+            _wallet = await RestoreWalletInternalAsync(await _js.InvokeAsync<string>("createKeyPairFromSeed", decryptedSecretSeed), _network);
 
             return true;
         }
@@ -128,7 +143,7 @@ public class RivalCoinsApp : IRivalCoinsApp
 
     public async Task<bool> SwapAysnc(RivalCoin swapOut, RivalCoin swapIn, double quantity)
     {
-        var paths = await _wallet.Wallet.Server.Value.PathStrictReceive
+        var paths = await _wallet.Wallet.Server.PathStrictReceive
             .SourceAssets(new[] { swapOut.Asset })
             .DestinationAsset(swapIn.Asset)
             .DestinationAmount(quantity.ToString())
@@ -146,26 +161,41 @@ public class RivalCoinsApp : IRivalCoinsApp
             pathAsset.Code(),
             pathAsset.Issuer(),
             _wallet.Wallet.NetworkInfo.NetworkPassphrase,
-            _wallet.Account.PrivateKey);
+            _wallet.Account.PrivateKey,
+            Sdk.Wallet.GetHorizonUri(_wallet.Wallet.Network));
 
         return true;
     }
 
     public async Task<Balance[]> GetBalancesAsync()
     {
-        var account = await _wallet.Wallet.Server.Value.Accounts.Account(_wallet.Account.PublicKey);
+        var account = await _wallet.Wallet.Server.Accounts.Account(_wallet.Account.PublicKey);
 
         return account.Balances;
     }
 
-    private static (Sdk.Wallet Wallet, KeyPairBasic Account) RestoreWallet(string walletKeyPairInfo, StellarManagedNetwork network)
+    private static async Task<(Sdk.Wallet Wallet, KeyPairBasic Account)> RestoreWalletInternalAsync(string walletKeyPairInfo, Sdk.Network network)
     {
         const int PublicKeyIndex = 1;
         const int SecretSeedIndex = 0;
 
         var walletKeyPair = new KeyPairBasic(walletKeyPairInfo.Split(':')[PublicKeyIndex], walletKeyPairInfo.Split(':')[SecretSeedIndex]);
-        var baseNetwork = network == StellarManagedNetwork.Testnet ? Sdk.Wallet.Testnet : Sdk.Wallet.Mainnet;
+        var wallet = Sdk.Wallet.Default[network] with { AccountSecretSeed = walletKeyPair.PrivateKey };
 
-        return (baseNetwork with { AccountSecretSeed = walletKeyPair.PrivateKey }, walletKeyPair);
+        // if the account does not exit on the system, create it
+        try
+        {
+            _ = await wallet.Server.Accounts.Account(walletKeyPair.PublicKey);
+        }
+        catch (Exception)
+        {
+            // account not found, so create it.
+            await Sdk.Wallet.CreateAccountAsync(walletKeyPair.PublicKey, network);
+        }
+
+        // initialize wallet
+        await wallet.InitializeAsync(walletKeyPair.PublicKey);
+
+        return (wallet, walletKeyPair);
     }
 }
