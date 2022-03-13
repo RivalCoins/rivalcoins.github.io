@@ -6,7 +6,13 @@ package RivalCoinsSdk;
 service RivalCoinsService { 
 	rpc CreateAirDropTransaction (AirDropRequest) returns (Transaction);
 	rpc SubmitAirDropTransaction (SignedTransaction) returns (Success);
+	rpc ReceiveTaxContributionHonor (TaxContributionInfo) returns (TaxContributionResponse);
 } 
+
+message TaxContributionInfo {
+	bytes receipt = 1;
+	string accountId = 2;
+}
 
 message AirDropRequest {
 	string recipientAddress = 1;
@@ -22,4 +28,11 @@ message SignedTransaction {
 
 message Success {
 	bool Success = 1;
+	string message = 2;
+}
+
+message TaxContributionResponse {
+	Success success = 1;
+	// An XDR containing Rival Coins' public honoring of the user's tax contribution, signed by Rival Coins.
+	string SignedXdr = 2;
 }

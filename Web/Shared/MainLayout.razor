@@ -1,6 +1,8 @@
 ﻿@using MudBlazor
 @inherits LayoutComponentBase
 
+@inject IRivalCoinsApp App
+
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -9,7 +11,9 @@
     <MudAppBar>
         <MudLink Href="https://demo.rivalcoins.io/list/battle-royale/" Target="_blank" Style="color:white;"><img src="icon-512.png" width=48 height=48 /></MudLink>
         <MudSpacer />
-        <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Link="https://github.com/RivalCoins/rivalcoins.github.io" Target="_blank" />
+        <MudText Align=Align.Center>Rival Coins Play Wallet <br/> v0.1.0 Beta | Network: @this.App.Network</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Link="https://github.com/RivalCoins" Target="_blank" />
     </MudAppBar>
     <MudMainContent>
         @Body

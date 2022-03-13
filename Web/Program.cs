@@ -16,7 +16,7 @@ namespace RivalCoins.Wallet.Web.Client
 {
     public class Program
     {
-        private const Network TargetNetwork = Network.Demo;
+        private const Network TargetNetwork = Network.Testnet;
 
         public static async Task Main(string[] args)
         {

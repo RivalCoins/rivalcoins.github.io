@@ -94,9 +94,30 @@ public class RivalCoinsApp : IRivalCoinsApp
 
     public async Task<IEnumerable<RivalCoin>> GetSwappableCoinsAsync()
     {
-        var rivalCoins = await Sdk.Wallet.GetRivalCoinsAsync(_network);
-        
-        return rivalCoins.Select(rivalCoin => new RivalCoin(rivalCoin.Name, rivalCoin.Asset, rivalCoin.Description, 0.0, rivalCoin.ImageUri)).ToList();
+        try
+        {
+            var website = Sdk.Wallet.GetRivalCoinsWebsite(_network);
+            var sanity = GetRivalCoinsAsync(_network);
+            var rivalCoins = await Sdk.Wallet.GetRivalCoinsAsync(_network);
+
+            return rivalCoins.Select(rivalCoin => new RivalCoin(rivalCoin.Name, rivalCoin.Asset, rivalCoin.Description, 0.0, rivalCoin.ImageUri)).ToList();
+        }
+        catch (Exception ex)
+        {
+            ;
+        }
+
+        return null;
+    }
+
+    public static async Task<List<(string Name, AssetTypeCreditAlphaNum Asset, string Description, string ImageUri)>> GetRivalCoinsAsync(Sdk.Network network)
+    {
+        using var http = new HttpClient();
+        await using var rivalCoinsToml = await http.GetStreamAsync($"{Sdk.Wallet.GetRivalCoinsWebsite(network)}/.well-known/stellar.toml");
+        using var rivalCoinsTomlStream = new StreamReader(rivalCoinsToml);
+        var rivalCoins = new List<(string Name, AssetTypeCreditAlphaNum Asset, string Description, string ImageUri)>();
+
+        return rivalCoins;
     }
 
     public async Task<bool> RestoreWalletAsync(string password)
@@ -108,7 +129,7 @@ public class RivalCoinsApp : IRivalCoinsApp
 
             _wallet = await RestoreWalletInternalAsync(await _js.InvokeAsync<string>("createKeyPairFromSeed", decryptedSecretSeed), _network);
 
-            return true;
+            return _wallet.Wallet.IsInitialized;
         }
 
         return false;
@@ -132,14 +153,27 @@ public class RivalCoinsApp : IRivalCoinsApp
 
     public async Task<bool> AirDropAsync()
     {
-        var tx = await _serverClient.CreateAirDropTransactionAsync(new AirDropRequest() { RecipientAddress = _wallet.Account.PublicKey });
+        try
+        {
+            var tx = await _serverClient.CreateAirDropTransactionAsync(new AirDropRequest() { RecipientAddress = _wallet.Account.PublicKey });
 
-        var signedTx = await _js.InvokeAsync<string>("signTransaction", tx.UnsignedXdr, _wallet.Wallet.NetworkInfo.NetworkPassphrase, _wallet.Account.PrivateKey);
+            var signedTx = await this.SignTransactionAsync(tx.UnsignedXdr);
 
-        return (await _serverClient.SubmitAirDropTransactionAsync(new SignedTransaction() { Xdr = signedTx })).Success_;
+            return (await _serverClient.SubmitAirDropTransactionAsync(new SignedTransaction() { Xdr = signedTx })).Success_;
+        }
+        catch (Exception ex)
+        {
+            ;
+        }
+
+        return false;
     }
 
-    public string GetPublicAddress() => _wallet.Account.PublicKey;
+    public async Task<string> SignTransactionAsync(string xdr) => await _js.InvokeAsync<string>("signTransaction", xdr, _wallet.Wallet.NetworkInfo.NetworkPassphrase, _wallet.Account.PrivateKey);
+
+    public async Task SubmitTransactionAsync(string xdr) => await _js.InvokeVoidAsync("submitTransaction", xdr, _wallet.Wallet.NetworkInfo.NetworkPassphrase, _wallet.Account.PrivateKey, Sdk.Wallet.GetHorizonUri(_wallet.Wallet.Network));
+ 
+    public string GetPublicAddress() => _wallet.Account?.PublicKey;
 
     public async Task<bool> SwapAysnc(RivalCoin swapOut, RivalCoin swapIn, double quantity)
     {
@@ -181,21 +215,43 @@ public class RivalCoinsApp : IRivalCoinsApp
 
         var walletKeyPair = new KeyPairBasic(walletKeyPairInfo.Split(':')[PublicKeyIndex], walletKeyPairInfo.Split(':')[SecretSeedIndex]);
         var wallet = Sdk.Wallet.Default[network] with { AccountSecretSeed = walletKeyPair.PrivateKey };
+        var accountExists = false;
 
         // if the account does not exit on the system, create it
         try
         {
             _ = await wallet.Server.Accounts.Account(walletKeyPair.PublicKey);
+            accountExists = true;
         }
         catch (Exception)
         {
             // account not found, so create it.
-            await Sdk.Wallet.CreateAccountAsync(walletKeyPair.PublicKey, network);
+            if(network != Sdk.Network.Mainnet)
+            {
+                await Sdk.Wallet.CreateAccountAsync(walletKeyPair.PublicKey, network);
+                accountExists = true;
+            }
         }
 
         // initialize wallet
-        await wallet.InitializeAsync(walletKeyPair.PublicKey);
+        if(accountExists)
+        {
+            await wallet.InitializeAsync(walletKeyPair.PublicKey);
+        }
 
         return (wallet, walletKeyPair);
+    }
+
+    public async Task<(bool Success, string Message)> GetTaxContributionHonorAsync(Stream receipt)
+    {
+        var result = await _serverClient.ReceiveTaxContributionHonorAsync(new TaxContributionInfo()
+        {
+            AccountId = _wallet.Account.PublicKey,
+            Receipt = await Google.Protobuf.ByteString.FromStreamAsync(receipt)
+        });
+
+        await this.SubmitTransactionAsync(result.SignedXdr);
+
+        return (result.Success.Success_, result.Success.Message);
     }
 }

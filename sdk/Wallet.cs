@@ -16,7 +16,7 @@ namespace RivalCoins.Sdk
     public enum Network
     {
         Testnet,
-        Public,
+        Mainnet,
         Local,
         Demo
     }
@@ -26,27 +26,12 @@ namespace RivalCoins.Sdk
         string AccountSecretSeed,
         string HomeDomain) : IDisposable
     {
-        public static Dictionary<Network, AssetTypeCreditAlphaNum> USDC = new Dictionary<Network, AssetTypeCreditAlphaNum>
-        {
-            { Network.Testnet,  (AssetTypeCreditAlphaNum)Asset.CreateNonNativeAsset("USDC", "GCWGBJURIDO4HKAF7EEHDDZO5VEAHGSCOMBR4SNJO3OQI5EQMP54RY7E") },
-            { Network.Demo,     (AssetTypeCreditAlphaNum)Asset.CreateNonNativeAsset("USDC", "GCWGBJURIDO4HKAF7EEHDDZO5VEAHGSCOMBR4SNJO3OQI5EQMP54RY7E") },
-            { Network.Local,    (AssetTypeCreditAlphaNum)Asset.CreateNonNativeAsset("USDC", "GCWGBJURIDO4HKAF7EEHDDZO5VEAHGSCOMBR4SNJO3OQI5EQMP54RY7E") },
-            { Network.Public,   (AssetTypeCreditAlphaNum)Asset.CreateNonNativeAsset("USDC", "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN") }
-        };
-
-        public static Dictionary<Network, AssetTypeCreditAlphaNum> DOLLAR = new Dictionary<Network, AssetTypeCreditAlphaNum>
-        {
-            { Network.Testnet,  (AssetTypeCreditAlphaNum)Asset.CreateNonNativeAsset("DOLLAR", "GCO7B6KEDWOBM5X642ZOTPYTYTTBZIGVGUED4ZSBILJOAU4XB7ISJBFF") },
-            { Network.Demo,     (AssetTypeCreditAlphaNum)Asset.CreateNonNativeAsset("DOLLAR", "GCRAE67YQGSFO5BM5TD65XKFDVX2LNI3PBC6EEQXRDDOOAV2UJD3D7AS") },
-            { Network.Local,    (AssetTypeCreditAlphaNum)Asset.CreateNonNativeAsset("DOLLAR", "GCVRZM4GKIVPUMRKX464ESCXXAD4PRF77AXWL7OCIVEDVQ5O3ZWDNWCN") },
-        };
-
         public static Dictionary<Network, Wallet> Default = new Dictionary<Network, Wallet>
         {
-            { Network.Testnet,  new Wallet(Network.Testnet, string.Empty, "test.rivalcoins.io") },
-            { Network.Demo,     new Wallet(Network.Demo, string.Empty, "demo.rivalcoins.io") },
-            { Network.Local,    new Wallet(Network.Local, string.Empty, "local.rivalcoins.io") },
-            { Network.Public,   new Wallet(Network.Public, string.Empty, "rivalcoins.io")},
+            { Network.Testnet,  new Wallet(Network.Testnet, string.Empty, "test.rivalcoins.money") },
+            { Network.Demo,     new Wallet(Network.Demo, string.Empty, "demo.rivalcoins.money") },
+            { Network.Local,    new Wallet(Network.Local, string.Empty, "local.rivalcoins.money") },
+            { Network.Mainnet,   new Wallet(Network.Mainnet, string.Empty, "rivalcoins.money")},
         };
 
         public stellar_dotnet_sdk.Network NetworkInfo { get; private set; }
@@ -70,7 +55,7 @@ namespace RivalCoins.Sdk
         public static string GetHorizonUri(Network network) => network switch
         {
             Network.Testnet => "https://horizon-testnet.stellar.org",
-            Network.Public => "https://horizon.stellar.org",
+            Network.Mainnet => "https://horizon.stellar.org",
             Network.Local => "http://localhost:8000",
             Network.Demo => "https://rivalcoins-stellar-horizon-rzu5x.ondigitalocean.app",
             _ => throw new NotImplementedException()
@@ -183,10 +168,10 @@ namespace RivalCoins.Sdk
 
         public static string GetRivalCoinsWebsite(Network network) => network switch
         {
-            Network.Testnet => "https://test.rivalcoins.io",
-            Network.Demo => "https://demo.rivalcoins.io",
-            Network.Local => "http://localhost:8080",
-            Network.Public => "https://rivalcoins.io"
+            Network.Testnet => "http://localhost",
+            Network.Demo => "https://demo.rivalcoins.money",
+            Network.Local => "http://localhost",
+            Network.Mainnet => "https://rivalcoins.money"
         };
 
         public static async Task<List<(string Name, AssetTypeCreditAlphaNum Asset, string Description, string ImageUri)>> GetRivalCoinsAsync(Network network)
@@ -215,7 +200,8 @@ namespace RivalCoins.Sdk
         public static string GetRivalCoinsServerHost(Network network) => network switch
         {
             Network.Local => "https://localhost:7123",
-            Network.Demo => "https://wallet.rivalcoins.io",
+            Network.Mainnet => "https://wallet.rivalcoins.io",
+            Network.Testnet => "https://localhost:7123",
             _ => throw new NotImplementedException()
         };
 

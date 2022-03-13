@@ -8,10 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore" Version="2.42.0" />
-    <PackageReference Include="Grpc.AspNetCore.Web" Version="2.42.0" />
+    <PackageReference Include="Azure.AI.FormRecognizer" Version="4.0.0-beta.3" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.43.0" />
+    <PackageReference Include="Grpc.AspNetCore.Web" Version="2.43.0" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
-    <PackageReference Include="RivalCoins.Sdk" Version="0.1.1-rc1" />
+    <PackageReference Include="RivalCoins.Sdk" Version="0.3.0" />
 	<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.14.0" />
   </ItemGroup>
 

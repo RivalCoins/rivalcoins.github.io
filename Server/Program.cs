@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration.Memory;
 using RivalCoins.Sdk;
 using RivalCoins.Server.Services;
 
@@ -5,8 +6,9 @@ namespace RivalCoins.Server;
 
 public class Program
 {
-    const Network TargetNetwork = (Network)(- 1);
-    const string AirDropAccountSeed = "<CHANGE ME>";
+    const Network TargetNetwork = Network.Local;
+    const string AirDropAccountSeed = "";
+    const string AzureFormRecognizerApiKey = "";
 
     const string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
@@ -40,6 +42,13 @@ public class Program
 
             return airDropWallet;
         });
+
+        var configValues = new Dictionary<string, string>
+        {
+            { "network", TargetNetwork.ToString() },
+            { "AzureFormRecognizerApiKey", AzureFormRecognizerApiKey }
+        };
+        builder.Configuration.AddInMemoryCollection(configValues);
 
         var app = builder.Build();
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Rival Coins Wallet</title>
+    <title>Rival Coins Play Wallet</title>
     <base href="/" />
     <link href="css/app.css" rel="stylesheet" />
     <link href="Client.styles.css" rel="stylesheet" />
@@ -83,6 +83,23 @@
                 )
                 .setTimeout(30)
                 .build();
+
+            // sign the transaction
+            transaction.sign(accountKeyPair);
+
+            try {
+                console.log(transaction.toXDR());
+                const transactionResult = await server.submitTransaction(transaction);
+                console.log(transactionResult);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        window.submitTransaction = async (xdr, networkPassphrase, accountSecret, horizonUrl) => {
+            const server = new StellarSdk.Server(horizonUrl);
+            const accountKeyPair = StellarSdk.Keypair.fromSecret(accountSecret);
+            const transaction = StellarSdk.TransactionBuilder.fromXDR(xdr, networkPassphrase);
 
             // sign the transaction
             transaction.sign(accountKeyPair);
