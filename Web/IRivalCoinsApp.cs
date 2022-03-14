@@ -8,7 +8,6 @@ namespace RivalCoins.Wallet.Web.Client;
 
 public interface IRivalCoinsApp
 {
-    Task CreateWalletAsync(string password);
     Task<IEnumerable<RivalCoin>> GetSwappableCoinsAsync();
     Task<bool> RestoreWalletAsync(string password);
     Task<bool> LoginUserAsync(string password);

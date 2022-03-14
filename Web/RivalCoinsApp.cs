@@ -77,19 +77,13 @@ public class RivalCoinsApp : IRivalCoinsApp
 
     #endregion Disposal
 
-    public async Task CreateWalletAsync(string password)
+    private async Task CreateWalletAsync(string password)
     {
         _wallet = await RestoreWalletInternalAsync(await _js.InvokeAsync<string>("createKeyPair"), _network);
 
         // store encrypted secret seed in local storage
         var encryptedSecretSeed = await _js.InvokeAsync<string>("aesGcmEncrypt", _wallet.Account.PrivateKey, password);
         await _localStorage.SetItemAsStringAsync("SecretSeed", encryptedSecretSeed);
-
-        // create account
-        if (_network == Sdk.Network.Testnet || _network == Sdk.Network.Demo || _network == Sdk.Network.Local)
-        {
-            await Sdk.Wallet.CreateAccountAsync(_wallet.Account.PublicKey, _network);
-        }
     }
 
     public async Task<IEnumerable<RivalCoin>> GetSwappableCoinsAsync()
@@ -145,6 +139,11 @@ public class RivalCoinsApp : IRivalCoinsApp
 
             _wallet = await RestoreWalletInternalAsync(await _js.InvokeAsync<string>("createKeyPairFromSeed", decryptedSecretSeed), _network);
 
+            return true;
+        }
+        else
+        {
+            await this.CreateWalletAsync(password);
             return true;
         }
 
@@ -225,12 +224,6 @@ public class RivalCoinsApp : IRivalCoinsApp
         }
         catch (Exception)
         {
-            // account not found, so create it.
-            if(network != Sdk.Network.Mainnet)
-            {
-                await Sdk.Wallet.CreateAccountAsync(walletKeyPair.PublicKey, network);
-                accountExists = true;
-            }
         }
 
         // initialize wallet

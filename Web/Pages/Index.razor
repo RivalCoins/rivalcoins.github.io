@@ -55,21 +55,26 @@
 <br />
 <br />
 }
+<br/>
+<br/>
 <MudText>Debug: @Debug</MudText>
 <br />
 <br />
 <MudText>Address: @RecipientAddress</MudText>
 <br />
 <br />
-<MudText>Stellar Balance: @StellarBalance</MudText>
-<br />
-<br />
-<MudText>Play MONEY Balance: @PlayMoneyBalance</MudText>
-<br />
-<br />
-<MudText>Play USA Balance: @PlayUsaBalance</MudText>
-<br />
-<br />
+<MudText>Balances &nbsp; <MudButton @onclick="@(async () => await this.RefreshBalancesAsync())" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Filled.Refresh" /></MudText>
+<MudPaper Width="300px" Square="true">
+    <MudList Clickable="true">
+        <MudListItem><MudText>Stellar Balance: @StellarBalance</MudText></MudListItem>
+        <MudDivider />
+        <MudListItem><MudText>Play MONEY Balance: @PlayMoneyBalance</MudText></MudListItem>
+        <MudDivider />
+        <MudListItem><MudText>Play USA Balance: @PlayUsaBalance</MudText></MudListItem>
+    </MudList>
+</MudPaper>
+<br/>
+<br/>
 <MudText>Rival Coins</MudText>
 <MudList Clickable="true">
     @foreach (var rivalCoin in _swapOutCoins)
@@ -77,6 +82,7 @@
         <MudListItem>
             <img width="30" height="30" src="@rivalCoin.IconUri"/> @($"{rivalCoin.Name} - {rivalCoin.Quantity:N7}")
         </MudListItem>
+        <MudDivider/>
     }
 </MudList>
 <hr />
@@ -147,8 +153,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _showCreateWalletButton = !await this.LocalStorage.ContainKeyAsync("SecretSeed");
-        _showLoginButton = !_showCreateWalletButton;
+        _showCreateWalletButton = false;
+        _showLoginButton = true;
         _showPassword = true;
 
         _ = this.LoadSwappableCoinsAsync();
@@ -174,26 +180,19 @@
             return;
         }
 
-        // restore wallet
-        var walletSuccessfullyRestored = await this.App.RestoreWalletAsync(this.Password);
-
-        // validate login
-        this.RecipientAddress = this.App.GetPublicAddress();
-        if(this.RecipientAddress != null)
+        var successfullLogin = await this.App.LoginUserAsync(this.Password);
+        if(successfullLogin)
         {
             _showLoginButton = _showPassword = false;
 
+            this.RecipientAddress = this.App.GetPublicAddress();
+
+            // restore wallet
+            var walletSuccessfullyRestored = await this.App.RestoreWalletAsync(this.Password);
             if (walletSuccessfullyRestored)
             {
                 // show balances
                 await this.RefreshBalancesAsync();
-
-                _showCreateWalletButton = false;
-                _showTaxHonoring = true;
-            }
-            else if(this.App.Network != Sdk.Network.Mainnet)
-            {
-                _showCreateWalletButton = true;
             }
         }
     }
@@ -211,6 +210,12 @@
 
     private async Task RefreshBalancesAsync()
     {
+        var walletRestored = !_showLoginButton && await this.App.RestoreWalletAsync(this.Password);
+        if(!walletRestored)
+        {
+            return;
+        }
+
         var balances = await this.App.GetBalancesAsync();
 
         var xlmBalance = balances.First(balance => balance.AssetType == "native");
@@ -232,6 +237,9 @@
             }
         }
 
+        _showCreateWalletButton = false;
+        _showTaxHonoring = true;
+
         base.StateHasChanged();
     }
 
@@ -249,10 +257,6 @@
             this.Debug = "Please enter password!";
             return;
         }
-
-        this.Debug = "Creating account...";
-        await this.App.CreateWalletAsync(this.Password);
-        this.Debug = "Account created!";
 
         // show current balances
         this.Debug = "Refreshing balances...";
