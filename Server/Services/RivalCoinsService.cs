@@ -96,7 +96,7 @@ public class RivalCoinsService : Sdk.Grpc.RivalCoinsService.RivalCoinsServiceBas
                     airDropTx.AddOperation(new PaymentOperation.Builder(
                         KeyPair.FromAccountId(request.AccountId),
                         _playUSA,
-                        totalTax.ToString())
+                        totalTax.ToString("N7"))
                         .SetSourceAccount(_airDropWallet.KeyPairWithSecretSeed)
                         .Build(),
                         _airDropWallet.KeyPairWithSecretSeed);
@@ -113,7 +113,7 @@ public class RivalCoinsService : Sdk.Grpc.RivalCoinsService.RivalCoinsServiceBas
                     airDropTx.AddOperation(new PaymentOperation.Builder(
                         KeyPair.FromAccountId(request.AccountId),
                         _playMONEY,
-                        (totalTax * UsaPricedInMoney).ToString())
+                        (totalTax * UsaPricedInMoney).ToString("N7"))
                         .SetSourceAccount(_airDropWallet.KeyPairWithSecretSeed)
                         .Build(),
                         _airDropWallet.KeyPairWithSecretSeed);

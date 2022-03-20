@@ -110,14 +110,13 @@ namespace RivalCoins.Sdk
 
             // KeyPair uses NSec.Cryptography.Sodium.InitializeCore, which is not supported on Blazor WebAssembly.
             // We will initialize as much as we can while avoiding this library.
-
             var canUseCryptography = CanUseCryptography();
 
             // get account info
-            this.Account = await this.Server.Accounts.Account(canUseCryptography ? this.KeyPairWithSecretSeed.AccountId : accountId);
+            this.Account = await this.Server.Accounts.Account(canUseCryptography && !string.IsNullOrWhiteSpace(this.AccountSecretSeed) ? this.KeyPairWithSecretSeed.AccountId : accountId);
 
             // initialize transaction engine
-            if (canUseCryptography)
+            if (canUseCryptography && !string.IsNullOrWhiteSpace(this.AccountSecretSeed))
             {
                 this.Transaction = await Transaction.CreateAsync(this.KeyPairWithSecretSeed, this.Server);
             }
@@ -177,11 +176,9 @@ namespace RivalCoins.Sdk
         public static async Task<List<(string Name, AssetTypeCreditAlphaNum Asset, string Description, string ImageUri)>> GetRivalCoinsAsync(Network network)
         {
             using var http = new HttpClient();
-            await using var rivalCoinsToml = await http.GetStreamAsync($"{GetRivalCoinsWebsite(network)}/.well-known/stellar.toml");
-            using var rivalCoinsTomlStream = new StreamReader(rivalCoinsToml);
             var rivalCoins = new List<(string Name, AssetTypeCreditAlphaNum Asset, string Description, string ImageUri)>();
-
-            var table = TOML.Parse(rivalCoinsTomlStream);
+            using var reader = new StringReader(await http.GetStringAsync($"{GetRivalCoinsWebsite(network)}/.well-known/stellar.toml"));
+            var table = TOML.Parse(reader);
 
             foreach (TomlNode currency in table["CURRENCIES"])
             {
